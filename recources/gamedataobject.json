@@ -1,0 +1,17 @@
+{
+    "Alle prøver at" : {
+        "discription" : "Alle spillere forsøger at få en bestemt ting til at ske. Sker denne ting, skal den udvalgte drikke",
+        "color" : "Green",
+        "questions" : [{
+            "text" : {
+                "unformat" : "Alle prøver at få {} til at grine. Hvis {} grinner drikker han {} tåre. BTW, hej {} du er min ynlings {}",
+                "keywords" : ["randomplayer1", "randomplayer1", "punishment", "randomplayer2", "randomplayer2"],
+                "punishment" : 2
+            },
+            "algoritmic" : {
+                "shockcategory" : [],
+                "difficulty" : 6
+            }
+        }]
+    }
+}

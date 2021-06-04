@@ -1,0 +1,91 @@
+body{
+    background-color: rgb(200, 255, 195);
+}
+#gameobj1{
+    left: 100%;
+}
+.menucontainer{
+    height: 100%;
+    width: 100%;
+    position: fixed;
+}
+
+#startmenulogo{
+    position: absolute;
+    height: 60%;
+    width: 60%;
+    bottom: 40%;
+    right: 20%;
+}
+
+#startmenubutton{
+    position: absolute;
+    bottom: 5%;
+}
+
+.gamecap{
+    position: absolute;
+}
+
+.gamec{
+    position: absolute;
+    height: 60%;
+    width: 60vh;
+    bottom: 35%;
+    right: calc((100% - 60vh)/2);
+    text-align:center;
+    color:white;
+    background-color: red;
+    border-radius: 50%;
+
+}
+
+.gameobjtitle{
+    font-weight: bold;
+    margin-top: 10%;
+    font-size:35px;
+}
+.gameobjtext{
+    margin-top: 10%;
+    font-size: 25px;
+}
+
+.gamec p{
+    color:white;
+    z-index: 1000;
+}
+
+.gamec i,
+.gamec::before {
+  height:100%;
+  width: 50%;
+}
+
+#lefti{
+    float: left;
+    shape-outside: radial-gradient(farthest-side at right, transparent calc(100% - 20px), #fff 0);
+}
+#righti{
+    float: right;
+    shape-outside: radial-gradient(farthest-side at left,  transparent calc(100% - 20px), #fff 0);
+}
+
+#backbutton{
+    position: absolute;
+    bottom: 5%;
+}
+.st0{
+    fill:rgb(62, 159, 57);    
+}
+
+.button{
+    position: fixed;
+    width: 80%;
+    right: 10%;
+    height: 12vh;
+
+    border-radius: 40px;
+    border-color: black;
+    font-size: 150%;
+    background-color:rgb(62, 159, 57);
+}
