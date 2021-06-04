@@ -7,6 +7,7 @@
         }
         function cap(){
             //Some code
+            //Some more code
         }
     }
 
