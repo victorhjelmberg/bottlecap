@@ -54,8 +54,9 @@ class SQL {
 
 class API{
     public static $flag = "mumbojumbo";
-    private static $MAX_API_CALLS = 30;
-    private static $API_REFRESH_RATE = 60 * 60 * 24; //24 hours between every refresh
+    public static $MAX_CAPS_TO_RETURN = 1;
+    public static $MAX_API_CALLS = 30;
+    public static $API_REFRESH_RATE = 60 * 60 * 24; //24 hours between every refresh
 
     private static function apiRequestUpdater($input){
         $tabelID = $input["tabelID"];
