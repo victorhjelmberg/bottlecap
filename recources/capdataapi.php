@@ -33,12 +33,9 @@ class SQL {
     */
 
     public static function sqlrequest($sql){
-        //$sql = '"'.$sql.'"';
         $SQLresult = SQL::$conn->query($sql);
 
-        if ($SQLresult === TRUE) {
-            return;
-        } elseif ($SQLresult === FALSE) {
+        if ($SQLresult === FALSE) {
             echo "Error: " . $sql . "<br>" . SQL::$conn->error;
             return;
         } else {
@@ -56,6 +53,7 @@ class SQL {
 }
 
 class API{
+    public static $flag = "mumbojumbo";
     private static $MAX_API_CALLS = 30;
     private static $API_REFRESH_RATE = 60 * 60 * 24; //24 hours between every refresh
 
@@ -108,7 +106,9 @@ class API{
 }
 
 SQL::connect();
-API::keyvalidation();
+//API::keyvalidation();
+play();
+
 SQL::disconnect();
 
 ?>

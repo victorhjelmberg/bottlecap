@@ -1,15 +1,71 @@
 <?php
+
     class gameCategory{
-        function __construct($options) {
-            $this->name = $options['name'];
-            $this->discription = $options['discription'];
-            $this->length = ""
+        function __construct($row, $options) {
+            $this->gameclassID = $row['gameclassID'];
+            $this->name = $row['name'];
+            $this->color = $row['color'];
+            $this->discription = $row['discription'];
+
+            //Creates array with CapID's
+            $capIDarray = [];
+
+            //SQL REQUEST COMBINER
+            $temp_SQL_CONDITIONS
+            $capIDResponse = SQL::sqlrequest('SELECT capID FROM cap WHERE gameclassID =' . $row['gameclassID']);
+            if ($capIDResponse->num_rows > 0) {
+                while($row = $capIDResponse->fetch_assoc()) {
+                    $capIDarray[] = $row['capID'];
+                }
+            }
+            $this->capIDs = $capIDarray;
+            //
+
+
         }
-        function cap(){
-            //Some code
-            //Some more code
+        function capindex($index){
+            return new cap (SQL::sqlrequest('SELECT * FROM cap WHERE capID = '.$index));
         }
     }
+
+    class cap{
+        function __construct($SQLresponse){
+            if ($SQLresponse->num_rows > 0) {
+                while($row = $SQLresponse->fetch_assoc()) {
+                    $this->unformatedText = $row['unformatedText'];
+                    $this->drinkAmount = $row['drinkAmount'];
+                    $this->difficulty = $row['difficulty'];
+                    $this->keywordsarray = $row['keywordsarray'];
+                    $this->shockcategoryarray = $row['shockcategoryarray'];
+                }
+            }
+        }
+    }
+
+    function categoryinit($options = []){
+        $categorylist = [];
+        $SQLresponse = SQL::sqlrequest("SELECT * FROM gameclass");
+
+        if ($SQLresponse->num_rows > 0) {
+            while($row = $SQLresponse->fetch_assoc()) {
+                $categorylist[] = new gameCategory($row, $options);
+            }
+            return $categorylist;
+        }
+    }
+    function play(){
+
+        $options = [
+            'keywords' => ['random', 'random2'], 
+            'shockcategory' => ['shocking', 'nudity']
+        ];
+
+        $x = categoryinit($options);
+
+        //echo $x[0]->capIDs[0]; //Fetch first category with first cap in category.
+        //echo $x[0]->capindex($x[0]->capIDs[0])->unformatedText;
+    }
+
 
 /*
 Class category
