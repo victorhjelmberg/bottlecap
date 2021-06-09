@@ -56,7 +56,6 @@
     function play(){
 
         $options = [
-            'keywords' => ['random', 'random2'], 
             'shockcategory' => ['shocking', 'nudity']
         ];
 
