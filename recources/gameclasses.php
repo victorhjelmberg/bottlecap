@@ -41,6 +41,9 @@
             }
         }
     }
+    function randomCapSelector(){
+        SQL::sqlrequest('SELECT COUNT FROM gameclass');
+    }
 
     function categoryinit($options = []){
         $categorylist = [];

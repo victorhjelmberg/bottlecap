@@ -43,7 +43,7 @@ class SQL {
         }
     }
 
-    //This function is untested!!
+    //This function is untested and untrusted!!
     public static function antiSQLattack($data){
         $data = trim($data);
         $data = stripslashes($data);
