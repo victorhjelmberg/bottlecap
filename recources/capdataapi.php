@@ -53,8 +53,7 @@ class SQL {
 }
 
 class API{
-    public static $flag = "mumbojumbo";
-    public static $MAX_CAPS_TO_RETURN = 1;
+    public static $MAX_CAPS_TO_RETURN = 30;
     public static $MAX_API_CALLS = 30;
     public static $API_REFRESH_RATE = 60 * 60 * 24; //24 hours between every refresh
 
@@ -108,7 +107,8 @@ class API{
 
 SQL::connect();
 //API::keyvalidation();
-play();
+
+test();
 
 SQL::disconnect();
 

@@ -42,24 +42,9 @@
         static $categories;
         static $capIDs;
         
-        static function setClassArray(){
-            $gameClasses = [];
-            $temp_getClassesSQL = SQL::sqlrequest('SELECT gameclass.gameclassID FROM gameclass');
-            if ($temp_getClassesSQL->num_rows > 0) {
-                while($row = $temp_getClassesSQL->fetch_assoc()) {
-                    $gameClasses[] = $row['gameclassID'];
-                }
-            }
-            randomCapSelector::$categories = $gameClasses;
-        }
         static function setCapArray($options = []){
-            $capIDs = [];
 
-            for ($i = 0; $i < sizeof(randomCapSelector::$categories); $i++){
-                $capIDs[randomCapSelector::$categories[$i]] = [];
-            }
-
-            //Some ugly code, to manipulate the SQL-Request
+            //Some ugly code, to manipulate the SQL-Request. Beautify is heavily needed, but not requried
             $condition = 'WHERE ';
             
             if(array_key_exists('shockcategory',$options)){
@@ -83,9 +68,13 @@
             ";
 
             //Request into Array
+            $capIDs = [];
             $capsFromOptionsSQL = SQL::sqlrequest($capsFromOptionsSQL);
             if ($capsFromOptionsSQL->num_rows > 0) {
                 while($row = $capsFromOptionsSQL->fetch_assoc()) {
+                    if(!(array_key_exists($row['gameclassID'], $capIDs))){
+                        $capIDs[$row['gameclassID']] = [];
+                    }
                     $capIDs[$row['gameclassID']][] = $row['capID'];
                 }
             }
@@ -96,66 +85,62 @@
         }
         static function randomSelector(){
 
-            $categories = array_keys(randomCapSelector::$capIDs);
-            $selectedCapsArray = [];
             $selectedCaps = [];
+            $organisedCaps = randomCapSelector::$capIDs; //DICT: Contains all the capIDs organised in categories in key value format:: capIDs = {'category1' => [1,3,5,7], 'category2' => [9,23]}
+            $itterationsLeft = API::$MAX_CAPS_TO_RETURN;
 
-            //Creates new array selectedCapsArray from capIDs
-            for ($i = 0; $i < $categories;$i++){
-                $selectedCapsArray[] = $categories[$i];
-                if (sizeof($categories[$i]) < API::$MAX_CAPS_TO_RETURN){
-                    $selectedCapsArray[$categories[$i]] = array_rand(randomCapSelector::$categories,sizeof($categories[$i]));
-                } else {
-                    $selectedCapsArray[$categories[$i]] = array_rand(randomCapSelector::$categories,API::$MAX_CAPS_TO_RETURN);
+            while ((sizeof(array_keys($organisedCaps)) != 0) and ($itterationsLeft > 0)){
+                //First step: Select a random category:
+                $temp_categories = array_keys($organisedCaps);
+                $randomSelectedCategoryKey = $temp_categories[array_rand($temp_categories)];
+                $randomSelectedCategoryValue = $organisedCaps[$randomSelectedCategoryKey];
+
+                //Next step: Select a random capID in the randomly selected category:
+                $randomSelectedCapIDIndex = array_rand($randomSelectedCategoryValue);
+                $randomSelectedCapID = $randomSelectedCategoryValue[$randomSelectedCapIDIndex];
+                $selectedCaps[] = $randomSelectedCapID;
+
+                //Third step: Delete the random selected CapID from the array, to away duplicate caps
+                array_splice($organisedCaps[$randomSelectedCategoryKey],$randomSelectedCapIDIndex,1);
+                if(sizeof($organisedCaps[$randomSelectedCategoryKey]) == 0){
+                    unset($organisedCaps[$randomSelectedCategoryKey]);
                 }
+                $itterationsLeft -= 1;
             }
-
-            for($i = 0; $i < API::$MAX_CAPS_TO_RETURN; $i++){
-                $last_category = "";
-                do {
-                    $new_category = array_rand(array_keys($selectedCapsArray));
-                } while ($new_category == $last_category and sizeof($selectedCapsArray[$new_category]) != 0);
-
-                $capToAdd = array_rand($selectedCapsArray[$new_category]);
-                $selectedCaps[] = $selectedCapsArray[$new_category][$capToAdd];
-                array_splice($selectedCapsArray[$new_category],$capToAdd,1); //Removes element to simulate that it has been selected
-            }
-
-            echo "completion";
-            echo json_encode($selectedCaps);
-
-
-
-            //$randomSelectedCategory = array_rand(randomCapSelector::$categories);
-
+            return $selectedCaps;
         }
-        
     }
-
-    /*function randomCapSelector(){
-
-        //Puts gameclasses into array and selects the category to be displayed
-
-    
-
-        //echo $gameClasses[array_rand($gameClasses)];
-    }*/
 
     function play(){
 
         $options = [
             //'shockcategory' => ['shocking', 'nudity']
-            'shockcategory' => []
+            'shockcategory' => ['illegal','shocking']
         ];
 
-        randomCapSelector::setClassArray();
         randomCapSelector::setCapArray($options);
         randomCapSelector::randomSelector();
 
-        //$x = categoryinit($options);
-
         //echo $x[0]->capIDs[0]; //Fetch first category with first cap in category.
         //echo $x[0]->capindex($x[0]->capIDs[0])->unformatedText;
+    }
+
+    function test(){
+        $test_repetition = 1;
+        $test_displayTime = false;
+
+        $test_timeStart = microtime(true);
+
+        for ($i = 0; $i < $test_repetition; $i++){
+            play();
+        }
+
+        $test_timeStop = microtime(true);
+
+        if($test_displayTime == true){
+            echo "Code execution took: " . round(($test_timeStop - $test_timeStart) * 1000, 2) . " ms";
+        }
+
     }
 
 
