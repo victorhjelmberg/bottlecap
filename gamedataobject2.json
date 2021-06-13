@@ -1,0 +1,18 @@
+{
+    "caps" : [
+        {
+            "unformatedText" : "Alle prøver at få {} til at grine. Hvis {} grinner drikker han {} tåre. BTW, hej {} du er min ynlings {}",
+            "keywordarray" : ["randomplayer1", "randomplayer1", "punishment", "randomplayer2", "randomplayer2"],
+            "drinkAmount" : 2,
+            "difficulty" : 6,
+            "gameclassID" : 1
+        }
+    ],
+    "gameclasses" : {
+        "1" : {
+            "name" : "Alle prøver at",
+            "color" : "Black",
+            "discription" : "Alle skal prøve dette"
+        }
+    }
+}

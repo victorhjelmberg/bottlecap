@@ -1,26 +1,16 @@
 <?php
 
     class gameCategory{
-        function __construct($row, $options) {
-            $this->gameclassID = $row['gameclassID'];
-            $this->name = $row['name'];
-            $this->color = $row['color'];
-            $this->discription = $row['discription'];
+        function __construct($gameclassID) {
 
-            //Creates array with CapID's
-            $capIDarray = [];
+            $sql = "SELECT * FROM gameclass WHERE gameclass.gameclassID = " . $gameclassID;
+            $SQLresponse = SQL::sqlrequest($sql);
 
-            //SQL REQUEST COMBINER
-            $capIDResponse = SQL::sqlrequest('SELECT capID FROM cap WHERE gameclassID =' . $row['gameclassID']);
-            if ($capIDResponse->num_rows > 0) {
-                while($row = $capIDResponse->fetch_assoc()) {
-                    $capIDarray[] = $row['capID'];
-                }
+            while($row = $SQLresponse->fetch_assoc()) {
+                $this->name = $row['name'];
+                $this->color = $row['color'];
+                $this->discription = $row['discription'];
             }
-            $this->capIDs = $capIDarray;
-            //
-
-
         }
     }
 
@@ -29,18 +19,23 @@
             if ($SQLresponse->num_rows > 0) {
                 while($row = $SQLresponse->fetch_assoc()) {
                     $this->unformatedText = $row['unformatedText'];
-                    $this->drinkAmount = $row['drinkAmount'];
-                    $this->difficulty = $row['difficulty'];
-                    $this->keywordsarray = $row['keywordsarray'];
-                    $this->shockcategoryarray = $row['shockcategoryarray'];
+                    $this->gameClass = $row['gameclassID'];
+
+                    if($row['drinkAmount'] != null){
+                        $this->drinkAmount = $row['drinkAmount'];
+                    }
+                    if($row['difficulty'] != null){
+                        $this->difficulty = $row['difficulty'];
+                    }
+                    if($row['keywordsarray'] != null){
+                        $this->keywordsarray = $row['keywordsarray'];
+                    }
                 }
             }
         }
     }
 
     class randomCapSelector{
-        static $categories;
-        static $capIDs;
         
         static function setCapArray($options = []){
 
@@ -69,24 +64,31 @@
 
             //Request into Array
             $capIDs = [];
+            $categories = [];
+
             $capsFromOptionsSQL = SQL::sqlrequest($capsFromOptionsSQL);
             if ($capsFromOptionsSQL->num_rows > 0) {
                 while($row = $capsFromOptionsSQL->fetch_assoc()) {
                     if(!(array_key_exists($row['gameclassID'], $capIDs))){
                         $capIDs[$row['gameclassID']] = [];
+                        $categories[$row['gameclassID']] = new gameCategory($row['gameclassID']);
                     }
                     $capIDs[$row['gameclassID']][] = $row['capID'];
                 }
             }
-            randomCapSelector::$capIDs = $capIDs;
+            return [
+                'capIDs' => $capIDs,
+                'categories' => $categories];
         }
+
         static function capindex($index){
             return new cap (SQL::sqlrequest('SELECT * FROM cap WHERE capID = '.$index));
         }
-        static function randomSelector(){
+
+        static function randomSelector($organisedCaps){
 
             $selectedCaps = [];
-            $organisedCaps = randomCapSelector::$capIDs; //DICT: Contains all the capIDs organised in categories in key value format:: capIDs = {'category1' => [1,3,5,7], 'category2' => [9,23]}
+            //$organisedCaps = randomCapSelector::$capIDs; //DICT: Contains all the capIDs organised in categories in key value format:: capIDs = {'category1' => [1,3,5,7], 'category2' => [9,23]}
             $itterationsLeft = API::$MAX_CAPS_TO_RETURN;
 
             while ((sizeof(array_keys($organisedCaps)) != 0) and ($itterationsLeft > 0)){
@@ -115,11 +117,22 @@
 
         $options = [
             //'shockcategory' => ['shocking', 'nudity']
-            'shockcategory' => ['illegal','shocking']
+            'shockcategory' => ['nudity','shocking','illegal']
         ];
 
-        randomCapSelector::setCapArray($options);
-        randomCapSelector::randomSelector();
+        $capArray = randomCapSelector::setCapArray($options);
+        $organisedCaps = $capArray['capIDs'];
+        $categories = $capArray['categories'];
+        $selectedCaps = randomCapSelector::randomSelector($organisedCaps);
+        
+        $arrayOfCapObjects = [];
+        for($i = 0; $i < sizeof($selectedCaps); $i++){
+            $arrayOfCapObjects[] = randomCapSelector::capindex($selectedCaps[$i]);
+        }
+        $response = ['caps' => $arrayOfCapObjects, 'gameclasses' => $categories];
+        echo json_encode($response,JSON_PRETTY_PRINT | JSON_INVALID_UTF8_IGNORE);
+        header('Content-type: application/json');
+
 
         //echo $x[0]->capIDs[0]; //Fetch first category with first cap in category.
         //echo $x[0]->capindex($x[0]->capIDs[0])->unformatedText;
