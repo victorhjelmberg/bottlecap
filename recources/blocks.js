@@ -30,7 +30,7 @@ Missing block, because of bad html-request.
 
 
 */
-testing_fetchablearray = [[10,15,13,19],[29,22,21,20],[33,38,39,32]]
+testing_fetchablearray = [[10,15,13,19],[29,22,21,20],[33,38,39,32],[40,41,42,43],[55,56,57,58],[61,66,68,69],[71,72,73,74],[81,82,83,84],[91,92,96,97]];
 function testing_fetchblock(){
     return testing_fetchablearray.shift();
 }
@@ -41,12 +41,35 @@ class blockHandler{
     static block_array = [];
 
     static last_block;
+    static current_block = 0;
 
-    static get_nextCap(){
-        return;
+    static initialise(){
+        for(let i = 0; i < blockHandler.block_loadAhead + 1; i++){
+            blockHandler.fetch_newBlock();
+        }
     }
-    static get_previusCap(){
-        return;
+
+    static get_nextBlock(){
+        if(blockHandler.last_block == blockHandler.current_block){
+            return "ERROR - Something went wrong with the fetch. There are no new blocks";
+        }
+        blockHandler.current_block += 1;
+        if(blockHandler.last_block - blockHandler.current_block < blockHandler.block_loadAhead){
+            blockHandler.fetch_newBlock();
+        }
+        return blockHandler.block_array[blockHandler.current_block % blockHandler.block_array.length];
+    }
+    static get_previusBlock(){
+        if (blockHandler.current_block != 0){
+            if ((blockHandler.current_block - 1) % blockHandler.block_array.length != blockHandler.last_block % blockHandler.block_array.length){
+                blockHandler.current_block -= 1;
+                return blockHandler.block_array[blockHandler.current_block % blockHandler.block_array.length];
+            } else {
+                return "ERROR - The block you're looking for has been forgotten";
+            }
+        } else {
+            return "ERROR - There are no last block";
+        }
     }
     static fetch_newBlock(){
         let newBlock = testing_fetchblock();
@@ -54,24 +77,30 @@ class blockHandler{
         //checks if array isn't filled
         if(blockHandler.block_array.length < (blockHandler.block_loadAhead + blockHandler.block_remember + 1)){
             blockHandler.block_array.push(newBlock);
+            blockHandler.last_block = blockHandler.block_array.length -1;
         } else {
-            //Checks if index will be out of bouns.
-            if(blockHandler.last_block + 1 > blockHandler.block_array.length){
-                blockHandler.last_block = 0;
-            } else {
-                blockHandler.last_block += 1;
-            }
+            blockHandler.last_block += 1;
+            blockHandler.block_array[blockHandler.last_block % blockHandler.block_array.length] = newBlock;
         }
         return;
     }
 }
 
 function play(){
-    blockHandler.fetch_newBlock();
+    blockHandler.initialise();
+}
+play();
+
+function up(){
+    console.log(JSON.stringify(blockHandler.get_nextBlock()));
+}
+function down(){
+    console.log(JSON.stringify(blockHandler.get_previusBlock()));
+}
+function ar(){
     console.log(JSON.stringify(blockHandler.block_array));
-    blockHandler.fetch_newBlock();
-    console.log(JSON.stringify(blockHandler.block_array));
+}
+function feetch(){
     blockHandler.fetch_newBlock();
     console.log(JSON.stringify(blockHandler.block_array));
 }
-play();
