@@ -14,27 +14,6 @@
         }
     }
 
-    class cap{
-        function __construct($SQLresponse){
-            if ($SQLresponse->num_rows > 0) {
-                while($row = $SQLresponse->fetch_assoc()) {
-                    $this->unformatedText = $row['unformatedText'];
-                    $this->gameClass = $row['gameclassID'];
-
-                    if($row['drinkAmount'] != null){
-                        $this->drinkAmount = $row['drinkAmount'];
-                    }
-                    if($row['difficulty'] != null){
-                        $this->difficulty = $row['difficulty'];
-                    }
-                    if($row['keywordsarray'] != null){
-                        $this->keywordsarray = $row['keywordsarray'];
-                    }
-                }
-            }
-        }
-    }
-
     class randomCapSelector{
         
         static function setCapArray($options = []){
@@ -82,7 +61,22 @@
         }
 
         static function capindex($index){
-            return new cap (SQL::sqlrequest('SELECT * FROM cap WHERE capID = '.$index));
+            $SQLresponse = SQL::sqlrequest('SELECT cap.unformatedText,cap.gameclassID,cap.drinkAmount,cap.difficulty,cap.keywordsarray FROM cap WHERE capID = '.$index);
+            $capBody = [];
+
+            if ($SQLresponse->num_rows > 0) {
+                while($row = $SQLresponse->fetch_assoc()) {
+                    for($i = 0; $i < sizeof(array_keys($row));$i++){
+                        $currentKey = array_keys($row)[$i];
+
+                        if($row[$currentKey] != null){
+                            $capBody[$currentKey] = $row[$currentKey];
+                        }
+
+                    }
+                }
+            }
+            return $capBody;
         }
 
         static function randomSelector($organisedCaps){
@@ -117,7 +111,7 @@
 
         $options = [
             //'shockcategory' => ['shocking', 'nudity']
-            'shockcategory' => ['nudity','shocking','illegal']
+            'shockcategory' => []
         ];
 
         $capArray = randomCapSelector::setCapArray($options);
@@ -132,10 +126,6 @@
         $response = ['caps' => $arrayOfCapObjects, 'gameclasses' => $categories];
         echo json_encode($response,JSON_PRETTY_PRINT | JSON_INVALID_UTF8_IGNORE);
         header('Content-type: application/json');
-
-
-        //echo $x[0]->capIDs[0]; //Fetch first category with first cap in category.
-        //echo $x[0]->capindex($x[0]->capIDs[0])->unformatedText;
     }
 
     function test(){
