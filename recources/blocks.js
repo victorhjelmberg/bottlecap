@@ -15,49 +15,103 @@ block functions:
 get_nextCap - Points the curser one step forward, if the block is new, and returns the next block.
 get_previusCap - returns the previus cap.
 fetch_newBlock - Calls the API, and stores the new block in the block_array.
-
-For testing purpose: 
-blockarray: [block1,block2,block3]
-fetchable_blocks : block4
-
-block1 = [10,15,13,19]
-block2 = [29,22,21,20]
-block3 = [33,38,39,32]
-
-
-Errors?
-Missing block, because of bad html-request.
-
-
 */
-testing_fetchablearray = [[10,15,13,19],[29,22,21,20],[33,38,39,32],[40,41,42,43],[55,56,57,58],[61,66,68,69],[71,72,73,74],[81,82,83,84],[91,92,96,97]];
-function testing_fetchblock(){
-    return testing_fetchablearray.shift();
+
+class fetcher{
+
+    static requestData = {};
+
+    static setRequestData(input){
+        fetcher.requestData = input;
+    }
+    
+    static setRequestOptions(){
+        return ({
+            method: 'GET',
+            cache: 'no-cache',
+            //body: JSON.stringify(requestObject)
+        });
+    }
+
+    static async apiCallJson(){
+        
+        const response = await fetch('recources/capdataapi.php', fetcher.setRequestOptions());
+        const responseText = await response.text();
+        //console.log(responseText);
+        return JSON.parse(responseText);
+        //return await response.json(); //extract JSON from the http response
+    }
+
+    static fetchHandler(callBack = () => {return}){
+        let timeForAPIRefresh = 10000; //default, wait 10 seconds between each request
+        fetcher.apiCallJson()
+        .then(function (newBlock) {
+
+            //Checks for API Errors
+            if(newBlock.hasOwnProperty('APIerror')){
+                const APIerror = newBlock['APIerror'];
+
+                if(APIerror['errorcode'] == 'NOMORECALLS'){
+                    timeForAPIRefresh = APIerror['errorAttachment']['datetime'] * 1000;
+                }
+
+                throw new Error(APIerror['errormessage']);
+
+            } else {
+                if(blockHandler.block_array.length < (blockHandler.block_loadAhead + blockHandler.block_remember + 1)){
+                    blockHandler.block_array.push(newBlock);
+                    blockHandler.last_block = blockHandler.block_array.length -1;
+                } else {
+                    blockHandler.last_block += 1;
+                    blockHandler.block_array[blockHandler.last_block % blockHandler.block_array.length] = newBlock;
+                }
+                callBack();
+                //blockplace();
+            }
+        })
+        .catch(function(error){
+            console.error(error);
+            setTimeout(fetcher.fetchHandler, timeForAPIRefresh);
+            console.log('Time left until your next call: ' + timeForAPIRefresh);
+        });
+    }
 }
 
 class blockHandler{
     static block_loadAhead = 1;
     static block_remember = 1;
     static block_array = [];
+    static activeBlock;
+    static activeCapIndex;
 
     static last_block;
     static current_block = 0;
 
     static initialise(){
         for(let i = 0; i < blockHandler.block_loadAhead + 1; i++){
-            blockHandler.fetch_newBlock();
+            if(i == 0){
+                //Initialize activeBlock and activeCapIndex after the first fetch.
+                fetcher.fetchHandler(() => {
+                    blockHandler.activeBlock = blockHandler.block_array[0];
+                    blockHandler.activeCapIndex = 0;
+                });
+            } else {
+                fetcher.fetchHandler();
+            }
         }
     }
 
     static get_nextBlock(){
         if(blockHandler.last_block == blockHandler.current_block){
-            return "ERROR - Something went wrong with the fetch. There are no new blocks";
+            blockplace();
+            throw new Error("Something went wrong with the fetch. There are no new blocks");
+        } else {
+            blockHandler.current_block += 1;
+            if(blockHandler.last_block - blockHandler.current_block < blockHandler.block_loadAhead){
+                queueMicrotask(fetcher.fetchHandler);
+            }
+            return blockHandler.block_array[blockHandler.current_block % blockHandler.block_array.length];  
         }
-        blockHandler.current_block += 1;
-        if(blockHandler.last_block - blockHandler.current_block < blockHandler.block_loadAhead){
-            blockHandler.fetch_newBlock();
-        }
-        return blockHandler.block_array[blockHandler.current_block % blockHandler.block_array.length];
     }
     static get_previusBlock(){
         if (blockHandler.current_block != 0){
@@ -65,26 +119,53 @@ class blockHandler{
                 blockHandler.current_block -= 1;
                 return blockHandler.block_array[blockHandler.current_block % blockHandler.block_array.length];
             } else {
-                return "ERROR - The block you're looking for has been forgotten";
+                throw new Error("The block you're looking for has been overwritten");
             }
         } else {
-            return "ERROR - There are no last block";
+            throw new Error("There are no previus block");
         }
     }
-    static fetch_newBlock(){
-        let newBlock = testing_fetchblock();
-
-        //checks if array isn't filled
-        if(blockHandler.block_array.length < (blockHandler.block_loadAhead + blockHandler.block_remember + 1)){
-            blockHandler.block_array.push(newBlock);
-            blockHandler.last_block = blockHandler.block_array.length -1;
+    static getNextCap(){
+        if(blockHandler.activeBlock['caps'].length == blockHandler.activeCapIndex + 1){
+            try{
+                blockHandler.activeBlock = blockHandler.get_nextBlock();
+                blockHandler.activeCapIndex = 0;
+            }
+            catch(fetcherror){
+                throw new Error(fetcherror);
+            }
         } else {
-            blockHandler.last_block += 1;
-            blockHandler.block_array[blockHandler.last_block % blockHandler.block_array.length] = newBlock;
+            blockHandler.activeCapIndex += 1;
         }
-        return;
+        console.log('CapIndex : ' + blockHandler.activeCapIndex);
+        return blockHandler.activeBlock['caps'][blockHandler.activeCapIndex];
+    }
+    static getPreviusCap(){
+        if(blockHandler.activeCapIndex == 0){
+            try{
+                blockHandler.activeBlock = blockHandler.get_previusBlock();
+                blockHandler.activeCapIndex = blockHandler.activeBlock['caps'].length - 1;
+            }
+            catch(memoryError){
+                throw new Error(memoryError);
+            }
+        } else {
+            blockHandler.activeCapIndex -= 1;
+        }
+        console.log('CapIndex : ' + blockHandler.activeCapIndex);
+        return blockHandler.activeBlock['caps'][blockHandler.activeCapIndex];
+    }
+    static getCurrentCap(){
+        console.log('CapIndex : ' + blockHandler.activeCapIndex);
+        return blockHandler.activeBlock['caps'][blockHandler.activeCapIndex];
     }
 }
+
+// fetcher.setRequestData({
+//     options : {
+//         shockcategory : []
+//     }
+// });
 
 function play(){
     blockHandler.initialise();
@@ -92,15 +173,33 @@ function play(){
 play();
 
 function up(){
-    console.log(JSON.stringify(blockHandler.get_nextBlock()));
+    blockHandler.get_nextBlock();
 }
 function down(){
-    console.log(JSON.stringify(blockHandler.get_previusBlock()));
+    blockHandler.get_previusBlock();
+    blockplace();
 }
 function ar(){
-    console.log(JSON.stringify(blockHandler.block_array));
+    console.log(blockHandler.block_array);
+    blockplace();
+    //console.log(JSON.stringify(blockHandler.block_array));
+}
+function blockplace(){
+    console.log("lastblock: " + blockHandler.last_block + ". currentblock: " + blockHandler.current_block);
 }
 function feetch(){
-    blockHandler.fetch_newBlock();
-    console.log(JSON.stringify(blockHandler.block_array));
+    fetcher.fetchHandler();
+    JSON.stringify(blockHandler.block_array);
 }
+function nxcap(){
+    return blockHandler.getNextCap();
+}
+function prcap(){
+    return blockHandler.getPreviusCap();
+}
+function cucap(){
+    return blockHandler.getCurrentCap();
+}
+
+//console.log(JSON.stringify(fetcher.fetchHandler()));
+

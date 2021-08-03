@@ -1,6 +1,7 @@
 <?php
 
 include $_SERVER['DOCUMENT_ROOT'].'/ølkapsel/recources/gameclasses.php';
+$apiCallTimeToWait = "";
 
 class SQL {
 
@@ -54,29 +55,33 @@ class SQL {
 
 class API{
     public static $MAX_CAPS_TO_RETURN = 30;
-    public static $MAX_API_CALLS = 30;
-    public static $API_REFRESH_RATE = 60 * 60 * 24; //24 hours between every refresh
+    public static $MAX_API_CALLS = 5;
+    public static $API_REFRESH_RATE = 60 * 60 * 1 / 60 / 2; //24 hours between every refresh
 
     private static function apiRequestUpdater($input){
         $tabelID = $input["tabelID"];
         $reqleft = $input["reqLeft"];
         $dateTimeobj = $input["dateTimeobj"];
 
-        if($reqleft != 0){
+        if($reqleft - 1 >= 0){
             $reqleft = $reqleft - 1;
         } else {
             $temp_stored_datetime = strtotime($input["dateTimeobj"]);
             $temp_current_datetime = strtotime(date('Y-m-d H:i:s'));
 
             if($temp_current_datetime - $temp_stored_datetime >= API::$API_REFRESH_RATE){
-                $reqleft = API::$MAX_API_CALLS;
-                $dateTimeobj = date('Y-m-d H:i:s');
+                if(API::$MAX_API_CALLS - 1 >= 0){
+                    $reqleft = API::$MAX_API_CALLS - 1;
+                    $dateTimeobj = date('Y-m-d H:i:s');
+                } else {
+                    return [false];
+                }
             } else {
-                //ERROR NOT ENOUGH API CALLS LEFT
-                echo "You're all out of calls";
+                return [false, strtotime($dateTimeobj) + API::$API_REFRESH_RATE - strtotime(date('Y-m-d H:i:s'))]; //ERROR NOT ENOUGH API CALLS LEFT
             }
         }
         SQL::sqlrequest("UPDATE apikey SET reqLeft = '".$reqleft."', dateTimeobj = '".$dateTimeobj."' WHERE tabelID = ".$tabelID);
+        return [true]; //API-key has been validated
     }
 
     public static function keyvalidation(){
@@ -91,25 +96,76 @@ class API{
             while($row = $SQLresponse->fetch_assoc()) {
                 if(password_verify($key, $row["identifier"])){
                     //User has been found
-                    API::apiRequestUpdater($row);
-                    return;
+                    return API::apiRequestUpdater($row); //Key was or was not validated. return true or false
                 }
             }
         }
         //User has not been found
-        $key = password_hash($key,PASSWORD_DEFAULT);
-        $temp_current_datetime = date('Y-m-d H:i:s');
-        SQL::sqlrequest("INSERT INTO apikey (identifier, reqLeft, dateTimeobj) VALUES ('".$key."','".(API::$MAX_API_CALLS - 1)."','".$temp_current_datetime."')");
+        if(API::$MAX_API_CALLS - 1 >= 0){
+            $key = password_hash($key,PASSWORD_DEFAULT);
+            $temp_current_datetime = date('Y-m-d H:i:s');
+            SQL::sqlrequest("INSERT INTO apikey (identifier, reqLeft, dateTimeobj) VALUES ('".$key."','".(API::$MAX_API_CALLS - 1)."','".$temp_current_datetime."')");
+            return [true]; //Key was validated. You may proceed
+        }
+    }
 
-        return;
+    public static function runTimeUpdate(){
+        $runTimeData = SQL::sqlrequest('SELECT * FROM runtime WHERE runtime.runTimeID = 1');
+
+        while($row = $runTimeData->fetch_assoc()) {
+            $runTimeAmunt = $row['runAmount'];
+            SQL::sqlrequest("UPDATE runtime SET runtime.runAmount = " . $runTimeAmunt + 1 . " WHERE runtime.runTimeID = 1");
+        }
     }
 }
 
-SQL::connect();
-//API::keyvalidation();
+class apiError{
+    private $errorobject;
 
-test();
+    function __construct($errormessage, $errorcode, $errorAttachment){
+        $this->errorobject = ['APIerror' => [
+            'errormessage' => $errormessage,
+            'errorcode' => $errorcode,
+            'errorAttachment' => $errorAttachment
+        ]];
+    }
+    function jsonError(){
+        return $this->errorobject;
+    }
+}
+
+$requestData = json_decode($_COOKIE['requestData']);
+
+SQL::connect();
+
+$APISucces = API::keyvalidation();
+
+if ($APISucces[0]){
+    API::runTimeUpdate();
+    test();
+} else {
+    $outOfAPICallsError = new apiError('No more API-calls', 'NOMORECALLS', ['datetime' => $APISucces[1]]);
+    /*
+    echo json_encode(
+        ['error' => "No more API-calls", 'datetime' => $APISucces[1]]
+    ); 
+    */
+    echo json_encode($outOfAPICallsError->jsonError());
+}
 
 SQL::disconnect();
+
+// SQL::connect();
+
+// $APISucces = API::keyvalidation();
+
+// if ($APISucces[0]){
+//     API::runTimeUpdate();
+//     test();
+// } else {
+//     echo json_encode(['error' => "No more API-calls", 'datetime' => $APISucces[1]]); 
+// }
+
+// SQL::disconnect();
 
 ?>

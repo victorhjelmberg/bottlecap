@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-16">
@@ -7,6 +8,28 @@
     <link rel="stylesheet" href="recources/html5reset-1.6.1.css">
     <link rel="stylesheet" href="recources/basicstyle.css">
 
+    <!-- Set Cookie -->
+    <script>
+        //Set expireyDate
+        const d = new Date();
+        d.setTime(d.getTime() + (12*60*60*1000)); //Expires in 12 hours
+        const expires = "expires="+ d.toUTCString();
+
+        document.cookie = "requestData=options:{shockcategory : []};" + expires;
+    </script>
+
+    <!-- API  -->
+    <script src="recources/blocks.js"></script>
+
+    <!-- On initialise json-data -->
+
+    <!--
+    <script>
+        const testFetch; <?php include $_SERVER['DOCUMENT_ROOT'].'/ølkapsel/recources/gameclasses.php'; ?>
+    </script>
+    -->
+
+    <!-- Display -->
     <script src="recources/jquery-3.6.0.js"></script>
     <script src="recources/javascript.js"></script>
 

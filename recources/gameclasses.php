@@ -123,7 +123,7 @@
         for($i = 0; $i < sizeof($selectedCaps); $i++){
             $arrayOfCapObjects[] = randomCapSelector::capindex($selectedCaps[$i]);
         }
-        $response = ['caps' => $arrayOfCapObjects, 'gameclasses' => $categories];
+        $response = ['caps' => $arrayOfCapObjects, 'gameclasses' => $categories, 'randomID' => rand(0,1000)];
         echo json_encode($response,JSON_PRETTY_PRINT | JSON_INVALID_UTF8_IGNORE);
         header('Content-type: application/json');
     }
